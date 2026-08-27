@@ -21,19 +21,26 @@ export default function SearchResults() {
         <Link to="/">Accueil</Link> / <span className="current">Recherche</span>
       </div>
 
-      <div className="listing-header">
-        <h2>🔍 Résultats pour "{q}"</h2>
-        <span className="listing-header__count">Affichage de {items.length} résultats</span>
-      </div>
+      {q && (
+          <div className="listing-header">
+            <h2>🔍 Résultats pour "{q}"</h2>
+            <span className="listing-header__count">Affichage de {items.length} résultats</span>
+          </div>
+        )}
 
       <div className="product-grid">
-        {loading ? (
-          <p>Chargement...</p>
-        ) : items.length === 0 ? (
-          <p>Aucun produit ne correspond à votre recherche.</p>
-        ) : (
-          items.map((p) => <ProductCard key={p.id} product={p} />)
-        )}
+          {loading ? (
+            <p>Chargement...</p>
+          ) : items.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state__icon">🔍</div>
+              <h3>Aucun résultat trouvé</h3>
+              <p>Aucun produit ne correspond à {q ? <>« <strong>{q}</strong> »</> : "votre recherche"}. Essayez avec d'autres mots-clés.</p>
+              <Link to="/" className="empty-state__cta">Voir tous les produits</Link>
+            </div>
+          ) : (
+            items.map((p) => <ProductCard key={p.id} product={p} />)
+          )}
       </div>
     </div>
   );

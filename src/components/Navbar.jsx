@@ -11,6 +11,8 @@ const links = [
   { to: "/featured", label: "En Vedette", icon: <Star size={16} /> },
 ];
 
+const STORE_MAPS_URL = "https://maps.app.goo.gl/v2rHa8kZvdfaAKB29";
+
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -32,14 +34,14 @@ export default function NavBar() {
                 <NavLink
                   key={c.id}
                   to={`/category/${c.id}`}
-        className="site-nav__dropdown-item"
-        onClick={() => setMenuOpen(false)}
-      >
-        <c.icon size={16} /> {c.name}
-      </NavLink>
-    ))}
-  </div>
-)}
+                  className="site-nav__dropdown-item"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <c.icon size={16} /> {c.name}
+                </NavLink>
+              ))}
+            </div>
+          )}
         </div>
 
         <button
@@ -60,9 +62,15 @@ export default function NavBar() {
           ))}
         </ul>
 
-        <div className="site-nav__pickup">
+        <a
+          href={STORE_MAPS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="site-nav__pickup"
+          title="Voir l'emplacement du magasin sur Google Maps"
+        >
           <MapPin size={16} /> Retrait Local
-        </div>
+        </a>
       </div>
     </nav>
   );

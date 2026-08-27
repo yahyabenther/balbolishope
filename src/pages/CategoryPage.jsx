@@ -49,15 +49,20 @@ export default function CategoryPage() {
         <span className="listing-header__count">Showing {items.length} results</span>
       </div>
 
-      <div className="product-grid">
+    <div className="product-grid">
         {loading ? (
           <p>Chargement...</p>
         ) : items.length === 0 ? (
-          <p>No products in this category yet.</p>
+          <div className="empty-state">
+            <div className="empty-state__icon">📦</div>
+            <h3>Aucun produit pour le moment</h3>
+            <p>Nous n'avons pas encore d'articles dans <strong>{category?.name || "cette catégorie"}</strong> — revenez bientôt.</p>
+            <Link to="/" className="empty-state__cta">Voir tous les produits</Link>
+          </div>
         ) : (
           items.map((p) => <ProductCard key={p.id} product={p} />)
         )}
-      </div>
+    </div>
     </div>
   );
 }
