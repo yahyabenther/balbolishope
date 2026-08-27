@@ -8,7 +8,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import ProductListPage from "./pages/ProductListPage";
 import CategoryPage from "./pages/CategoryPage";
-import SearchResults from "./pages/SearchResults.JSX";
+import SearchResults from "./pages/SearchResults";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
