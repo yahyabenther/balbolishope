@@ -676,3 +676,44 @@
   font-size: 12px;
   margin-top: 2px;
 }
+.field-error {
+  color: var(--red, #d9342b);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.account-form__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.account-form__divider::before,
+.account-form__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  background: #fff;
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 6px);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.btn-google:hover {
+  background: var(--bg-page);
+}

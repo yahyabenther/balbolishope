@@ -8,6 +8,8 @@ import {
   onAuthStateChanged,
   getAuth,
   sendPasswordResetEmail,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import {
   doc,
@@ -98,6 +100,38 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Sign in (or sign up, on first use) with Google. If this is the
+  // user's first time authenticating with Google, a Firestore user doc
+  // is created for them with the default "customer" role — just like
+  // a normal registration. Existing users just get logged in.
+  async function loginWithGoogle() {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || "",
+          role: "customer",
+          createdAt: new Date().toISOString(),
+        };
+        await setDoc(userDocRef, userData);
+      }
+
+      await fetchUsers();
+      return { ok: true };
+    } catch (error) {
+      console.error("Google login failed:", error.message);
+      return { ok: false, error: error.message };
+    }
+  }
+
   // Logout current user
   async function logout() {
     try {
@@ -107,7 +141,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Send a password reset email via Firebase
   // Send a password reset email via Firebase, redirecting the reset
   // link into our own custom /reset-password page instead of Firebase's
   // default hosted page.
@@ -222,6 +255,7 @@ export function AuthProvider({ children }) {
         clients,
         register,
         login,
+        loginWithGoogle,
         logout,
         updateProfile,
         addSubAdmin,
