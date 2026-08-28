@@ -34,10 +34,11 @@ export default function Account() {
   const navigate = useNavigate();
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [forgotMode, setForgotMode] = useState(false);
-  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [loginErrors, setLoginErrors] = useState({});
+
   const [registerForm, setRegisterForm] = useState({
     firstName: "",
     lastName: "",
@@ -49,6 +50,7 @@ export default function Account() {
     address: "",
     governorate: "Tunis",
   });
+  const [registerErrors, setRegisterErrors] = useState({});
 
   const [resetEmail, setResetEmail] = useState("");
   const [resetMessage, setResetMessage] = useState("");
@@ -56,12 +58,20 @@ export default function Account() {
 
   async function handleLogin(e) {
     e.preventDefault();
-    setError("");
 
-    if (!loginForm.email.trim() || !loginForm.password) {
-      setError("Veuillez entrer votre e-mail et votre mot de passe. / يرجى إدخال البريد الإلكتروني وكلمة السر");
+    const errors = {};
+    if (!loginForm.email.trim()) {
+      errors.email = "Veuillez entrer votre e-mail. / يرجى إدخال البريد الإلكتروني";
+    }
+    if (!loginForm.password) {
+      errors.password = "Veuillez entrer votre mot de passe. / يرجى إدخال كلمة السر";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setLoginErrors(errors);
       return;
     }
+    setLoginErrors({});
 
     setSubmitting(true);
     const ok = await login(loginForm.email.trim(), loginForm.password);
@@ -70,31 +80,39 @@ export default function Account() {
     if (ok) {
       navigate("/");
     } else {
-      setError(
-        "E-mail ou mot de passe incorrect. / البريد الإلكتروني أو كلمة السر غير صحيحة"
-      );
+      setLoginErrors({
+        password: "E-mail ou mot de passe incorrect. / البريد الإلكتروني أو كلمة السر غير صحيحة",
+      });
     }
   }
 
   async function handleRegister(e) {
     e.preventDefault();
-    setError("");
 
-    if (
-      !registerForm.firstName ||
-      !registerForm.lastName ||
-      !registerForm.email ||
-      !registerForm.password ||
-      !registerForm.confirmPassword
-    ) {
-      setError("Veuillez remplir tous les champs requis. / يرجى ملء جميع الخانات المطلوبة");
-      return;
+    const errors = {};
+    if (!registerForm.firstName.trim()) {
+      errors.firstName = "Ce champ est requis. / هذه الخانة مطلوبة";
+    }
+    if (!registerForm.lastName.trim()) {
+      errors.lastName = "Ce champ est requis. / هذه الخانة مطلوبة";
+    }
+    if (!registerForm.email.trim()) {
+      errors.email = "Ce champ est requis. / هذه الخانة مطلوبة";
+    }
+    if (!registerForm.password) {
+      errors.password = "Ce champ est requis. / هذه الخانة مطلوبة";
+    }
+    if (!registerForm.confirmPassword) {
+      errors.confirmPassword = "Ce champ est requis. / هذه الخانة مطلوبة";
+    } else if (registerForm.password && registerForm.password !== registerForm.confirmPassword) {
+      errors.confirmPassword = "Les mots de passe ne correspondent pas. / كلمتا السر غير متطابقتين";
     }
 
-    if (registerForm.password !== registerForm.confirmPassword) {
-      setError("Les mots de passe ne correspondent pas. / كلمتا السر غير متطابقتين");
+    if (Object.keys(errors).length > 0) {
+      setRegisterErrors(errors);
       return;
     }
+    setRegisterErrors({});
 
     setSubmitting(true);
     const name = `${registerForm.firstName} ${registerForm.lastName}`.trim();
@@ -106,7 +124,7 @@ export default function Account() {
 
     if (!result.ok) {
       setSubmitting(false);
-      setError(translateAuthError(result.error));
+      setRegisterErrors(translateAuthError(result.error));
       return;
     }
 
@@ -169,16 +187,20 @@ export default function Account() {
     <div className="container account-page">
       {!forgotMode && (
         <div className="account-tabs">
-          <button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setError(""); }}>
+          <button
+            className={mode === "login" ? "active" : ""}
+            onClick={() => { setMode("login"); setLoginErrors({}); setRegisterErrors({}); }}
+          >
             Connexion / الدخول
           </button>
-          <button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setError(""); }}>
+          <button
+            className={mode === "register" ? "active" : ""}
+            onClick={() => { setMode("register"); setLoginErrors({}); setRegisterErrors({}); }}
+          >
             Inscription / تسجيل حساب
           </button>
         </div>
       )}
-
-      {error && <div className="field-error account-page__error">{error}</div>}
 
       {forgotMode ? (
         <form className="account-form" onSubmit={handleForgotPassword}>
@@ -189,7 +211,7 @@ export default function Account() {
             value={resetEmail}
             onChange={(e) => setResetEmail(e.target.value)}
           />
-          {resetMessage && <div className="field-error account-page__error">{resetMessage}</div>}
+          {resetMessage && <div className="field-error">{resetMessage}</div>}
           <button className="btn btn-accent" type="submit" disabled={resetSubmitting}>
             {resetSubmitting ? "Envoi en cours... / جارٍ الإرسال..." : "Envoyer le lien / إرسال الرابط"}
           </button>
@@ -203,23 +225,27 @@ export default function Account() {
           </button>
         </form>
       ) : mode === "login" ? (
-        <form className="account-form" onSubmit={handleLogin}>
+        <form className="account-form" onSubmit={handleLogin} noValidate>
           <label>E-mail / البريد الإلكتروني</label>
           <input
             type="email"
             value={loginForm.email}
             onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
           />
+          {loginErrors.email && <div className="field-error">{loginErrors.email}</div>}
+
           <label>Mot de passe / كلمة السر</label>
           <input
             type="password"
             value={loginForm.password}
             onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
           />
+          {loginErrors.password && <div className="field-error">{loginErrors.password}</div>}
+
           <button
             type="button"
             className="account-form__forgot-link"
-            onClick={() => { setForgotMode(true); setError(""); }}
+            onClick={() => { setForgotMode(true); }}
           >
             Mot de passe oublié ? / نسيت كلمة السر؟
           </button>
@@ -228,22 +254,27 @@ export default function Account() {
           </button>
         </form>
       ) : (
-        <form className="account-form" onSubmit={handleRegister}>
+        <form className="account-form" onSubmit={handleRegister} noValidate>
           <label>Prénom * / الإسم *</label>
           <input
             value={registerForm.firstName}
             onChange={(e) => setRegisterForm({ ...registerForm, firstName: e.target.value })}
           />
+          {registerErrors.firstName && <div className="field-error">{registerErrors.firstName}</div>}
+
           <label>Nom * / اللقب *</label>
           <input
             value={registerForm.lastName}
             onChange={(e) => setRegisterForm({ ...registerForm, lastName: e.target.value })}
           />
+          {registerErrors.lastName && <div className="field-error">{registerErrors.lastName}</div>}
+
           <label>Adresse / العنوان</label>
           <input
             value={registerForm.address}
             onChange={(e) => setRegisterForm({ ...registerForm, address: e.target.value })}
           />
+
           <label>Gouvernorat / الولاية</label>
           <select
             value={registerForm.governorate}
@@ -255,29 +286,37 @@ export default function Account() {
               </option>
             ))}
           </select>
+
           <label>Numéro de Mobile / رقم الهاتف</label>
           <input
             value={registerForm.phone}
             onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
           />
+
           <label>E-mail * / البريد الإلكتروني *</label>
           <input
             type="email"
             value={registerForm.email}
             onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
           />
+          {registerErrors.email && <div className="field-error">{registerErrors.email}</div>}
+
           <label>Mot de passe * / كلمة السر *</label>
           <input
             type="password"
             value={registerForm.password}
             onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
           />
+          {registerErrors.password && <div className="field-error">{registerErrors.password}</div>}
+
           <label>Confirmer le mot de passe * / تأكيد كلمة السر *</label>
           <input
             type="password"
             value={registerForm.confirmPassword}
             onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
           />
+          {registerErrors.confirmPassword && <div className="field-error">{registerErrors.confirmPassword}</div>}
+
           <button className="btn btn-accent" type="submit" disabled={submitting}>
             {submitting ? "Création en cours... / جارٍ الإنشاء..." : "Créer un compte / إنشاء حساب"}
           </button>
@@ -288,17 +327,17 @@ export default function Account() {
 }
 
 // Firebase returns technical error codes/messages — map the common ones
-// to something a customer can actually understand.
+// to a field-specific message so it renders under the right input.
 function translateAuthError(message) {
-  if (!message) return "Une erreur est survenue. / حدث خطأ ما";
+  if (!message) return { email: "Une erreur est survenue. / حدث خطأ ما" };
   if (message.includes("auth/email-already-in-use")) {
-    return "Un compte existe déjà avec cet e-mail. / يوجد حساب بهذا البريد الإلكتروني بالفعل";
+    return { email: "Un compte existe déjà avec cet e-mail. / يوجد حساب بهذا البريد الإلكتروني بالفعل" };
   }
   if (message.includes("auth/weak-password")) {
-    return "Le mot de passe doit contenir au moins 6 caractères. / يجب أن تتكون كلمة السر من 6 أحرف على الأقل";
+    return { password: "Le mot de passe doit contenir au moins 6 caractères. / يجب أن تتكون كلمة السر من 6 أحرف على الأقل" };
   }
   if (message.includes("auth/invalid-email")) {
-    return "Adresse e-mail invalide. / عنوان بريد إلكتروني غير صالح";
+    return { email: "Adresse e-mail invalide. / عنوان بريد إلكتروني غير صالح" };
   }
-  return "Une erreur est survenue. Veuillez réessayer. / حدث خطأ ما، حاول مرة أخرى";
+  return { email: "Une erreur est survenue. Veuillez réessayer. / حدث خطأ ما، حاول مرة أخرى" };
 }
