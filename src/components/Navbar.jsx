@@ -44,14 +44,6 @@ export default function NavBar() {
           )}
         </div>
 
-        <button
-          className="site-nav__mobile-toggle"
-          onClick={() => setMobileNavOpen((v) => !v)}
-          aria-label="Basculer la navigation"
-        >
-          <Menu size={20} />
-        </button>
-
         <ul className={`site-nav__links ${mobileNavOpen ? "site-nav__links--open" : ""}`}>
           {links.map((l) => (
             <li key={l.to}>
@@ -61,8 +53,8 @@ export default function NavBar() {
             </li>
           ))}
         </ul>
-
         <a
+        
           href={STORE_MAPS_URL}
           target="_blank"
           rel="noopener noreferrer"
@@ -71,6 +63,26 @@ export default function NavBar() {
         >
           <MapPin size={16} /> Retrait Local
         </a>
+
+        <div className="site-nav__mobile-actions">
+          <button
+            className="site-nav__mobile-toggle"
+            onClick={() => setMobileNavOpen((v) => !v)}
+            aria-label="Basculer la navigation"
+          >
+            <Menu size={20} />
+          </button>
+          <a
+            href={STORE_MAPS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="site-nav__pickup-icon"
+            aria-label="Retrait Local"
+            title="Voir l'emplacement du magasin sur Google Maps"
+          >
+            <MapPin size={18} />
+          </a>
+        </div>
       </div>
     </nav>
   );

@@ -7,6 +7,7 @@ import {
   signOut,
   onAuthStateChanged,
   getAuth,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import {
   doc,
@@ -52,7 +53,7 @@ export function AuthProvider({ children }) {
       } else {
         setUser(null);
       }
-      
+
       await fetchUsers();
       setLoading(false);
     });
@@ -103,6 +104,24 @@ export function AuthProvider({ children }) {
       await signOut(auth);
     } catch (error) {
       console.error("Logout failed:", error.message);
+    }
+  }
+
+  // Send a password reset email via Firebase
+  // Send a password reset email via Firebase, redirecting the reset
+  // link into our own custom /reset-password page instead of Firebase's
+  // default hosted page.
+  async function resetPassword(email) {
+    try {
+      const actionCodeSettings = {
+        url: `${window.location.origin}/reset-password`,
+        handleCodeInApp: true,
+      };
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      return { ok: true };
+    } catch (error) {
+      console.error("Password reset failed:", error.message);
+      return { ok: false, error: error.message };
     }
   }
 
@@ -207,6 +226,7 @@ export function AuthProvider({ children }) {
         updateProfile,
         addSubAdmin,
         listUsers,
+        resetPassword,
       }}
     >
       {!loading && children}

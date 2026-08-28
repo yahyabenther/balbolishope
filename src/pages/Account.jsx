@@ -30,9 +30,10 @@ const GOVERNORATES = [
 ];
 
 export default function Account() {
-  const { isLoggedIn, user, login, register, logout, updateProfile } = useAuth();
+  const { isLoggedIn, user, login, register, logout, updateProfile, resetPassword } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState("login"); // "login" | "register"
+  const [forgotMode, setForgotMode] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,11 +43,16 @@ export default function Account() {
     lastName: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phone: "",
     phone2: "",
     address: "",
     governorate: "Tunis",
   });
+
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -74,8 +80,19 @@ export default function Account() {
     e.preventDefault();
     setError("");
 
-    if (!registerForm.firstName || !registerForm.lastName || !registerForm.email || !registerForm.password) {
+    if (
+      !registerForm.firstName ||
+      !registerForm.lastName ||
+      !registerForm.email ||
+      !registerForm.password ||
+      !registerForm.confirmPassword
+    ) {
       setError("Veuillez remplir tous les champs requis. / يرجى ملء جميع الخانات المطلوبة");
+      return;
+    }
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      setError("Les mots de passe ne correspondent pas. / كلمتا السر غير متطابقتين");
       return;
     }
 
@@ -107,6 +124,30 @@ export default function Account() {
     navigate("/");
   }
 
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    setResetMessage("");
+
+    if (!resetEmail.trim()) {
+      setResetMessage("Veuillez entrer votre e-mail. / يرجى إدخال البريد الإلكتروني");
+      return;
+    }
+
+    setResetSubmitting(true);
+    const result = await resetPassword(resetEmail.trim());
+    setResetSubmitting(false);
+
+    if (result.ok) {
+      setResetMessage(
+        "Un e-mail de réinitialisation a été envoyé. Vérifiez votre boîte de réception. / تم إرسال بريد إلكتروني لإعادة التعيين، تحقق من بريدك الوارد"
+      );
+    } else {
+      setResetMessage(
+        "Impossible d'envoyer l'e-mail. Vérifiez l'adresse. / تعذر إرسال البريد الإلكتروني، تحقق من العنوان"
+      );
+    }
+  }
+
   if (isLoggedIn) {
     return (
       <div className="container account-page">
@@ -126,18 +167,42 @@ export default function Account() {
 
   return (
     <div className="container account-page">
-      <div className="account-tabs">
-        <button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setError(""); }}>
-          Connexion / الدخول
-        </button>
-        <button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setError(""); }}>
-          Inscription / تسجيل حساب
-        </button>
-      </div>
+      {!forgotMode && (
+        <div className="account-tabs">
+          <button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setError(""); }}>
+            Connexion / الدخول
+          </button>
+          <button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setError(""); }}>
+            Inscription / تسجيل حساب
+          </button>
+        </div>
+      )}
 
       {error && <div className="field-error account-page__error">{error}</div>}
 
-      {mode === "login" ? (
+      {forgotMode ? (
+        <form className="account-form" onSubmit={handleForgotPassword}>
+          <h2>Mot de passe oublié / نسيت كلمة السر</h2>
+          <label>E-mail / البريد الإلكتروني</label>
+          <input
+            type="email"
+            value={resetEmail}
+            onChange={(e) => setResetEmail(e.target.value)}
+          />
+          {resetMessage && <div className="field-error account-page__error">{resetMessage}</div>}
+          <button className="btn btn-accent" type="submit" disabled={resetSubmitting}>
+            {resetSubmitting ? "Envoi en cours... / جارٍ الإرسال..." : "Envoyer le lien / إرسال الرابط"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline"
+            style={{ marginTop: 10 }}
+            onClick={() => { setForgotMode(false); setResetMessage(""); setResetEmail(""); }}
+          >
+            ← Retour à la connexion / الرجوع للدخول
+          </button>
+        </form>
+      ) : mode === "login" ? (
         <form className="account-form" onSubmit={handleLogin}>
           <label>E-mail / البريد الإلكتروني</label>
           <input
@@ -151,6 +216,13 @@ export default function Account() {
             value={loginForm.password}
             onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
           />
+          <button
+            type="button"
+            className="account-form__forgot-link"
+            onClick={() => { setForgotMode(true); setError(""); }}
+          >
+            Mot de passe oublié ? / نسيت كلمة السر؟
+          </button>
           <button className="btn btn-accent" type="submit" disabled={submitting}>
             {submitting ? "Connexion en cours... / جارٍ الدخول..." : "Connexion / الدخول"}
           </button>
@@ -199,6 +271,12 @@ export default function Account() {
             type="password"
             value={registerForm.password}
             onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+          />
+          <label>Confirmer le mot de passe * / تأكيد كلمة السر *</label>
+          <input
+            type="password"
+            value={registerForm.confirmPassword}
+            onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
           />
           <button className="btn btn-accent" type="submit" disabled={submitting}>
             {submitting ? "Création en cours... / جارٍ الإنشاء..." : "Créer un compte / إنشاء حساب"}

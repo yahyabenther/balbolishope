@@ -14,6 +14,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Account from "./pages/Account";
+import ResetPassword from "./pages/ResetPassword";
 import { Zap, Percent, TrendingUp, Star } from "lucide-react";
 
 import { ProductProvider } from "./context/ProductContext";
@@ -81,6 +82,7 @@ export default function App() {
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/order-confirmation" element={<OrderConfirmation />} />
                   <Route path="/account" element={<Account />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                 </Route>
 
                 <Route

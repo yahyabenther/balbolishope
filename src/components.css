@@ -1027,3 +1027,25 @@
     padding: 0 12px;
   }
 }
+.site-nav__mobile-actions {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .site-nav__mobile-actions {
+    display: flex;
+  }
+}
+
+.site-nav__pickup-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dark, #1c1c1e);
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
