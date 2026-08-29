@@ -94,7 +94,24 @@
   gap: 8px;
   position: relative;
 }
-
+.site-header__account-menu {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.site-header__account,
+.site-header__cart,
+.site-header__logout {
+  background: transparent;
+  color: #fff;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
 /* Same base layout as .site-header__account / .site-header__cart, so the
    icon + label line up consistently. Previously this button had no base
    layout rule of its own — it relied entirely on its <span> for content,
@@ -419,7 +436,7 @@
 
 .product-card__btn {
   width: calc(100% - 24px);
-  margin: 0 12px 12px;
+  margin: auto 12px 12px;
 }
 
 /* ---- Cart drawer ---- */

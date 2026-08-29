@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { categories } from "../data/SampleProducts";
-import { Search, User, ShoppingCart, LayoutDashboard } from "lucide-react";
+import { Search, User, ShoppingCart, LayoutDashboard, LogOut } from "lucide-react";
 import logo from "../assets/logo.png";
 import CategorySelect from "./CategorySelect";
 
@@ -50,8 +50,8 @@ export default function Header() {
               <Link to="/account" className="site-header__account">
                 <User size={18} /> <span>Bonjour, {user.firstName}</span>
               </Link>
-              <button className="site-header__logout" onClick={logout}>
-                <span>Déconnexion</span>
+              <button className="site-header__logout" onClick={logout} aria-label="Déconnexion">
+                <LogOut size={18} /> <span>Déconnexion</span>
               </button>
             </div>
           ) : (
