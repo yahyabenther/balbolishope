@@ -18,7 +18,11 @@ async function uploadToCloudinary(file) {
 
   if (!res.ok) throw new Error("Cloudinary upload failed");
   const data = await res.json();
-  return data.secure_url;
+
+  // Force auto format + quality conversion so photos saved as HEIC/HEIF
+  // (Samsung's default camera format) render correctly in all browsers,
+  // and so images are auto-compressed for faster loading.
+  return data.secure_url.replace("/upload/", "/upload/f_auto,q_auto/");
 }
 
 const CATEGORIES = [
