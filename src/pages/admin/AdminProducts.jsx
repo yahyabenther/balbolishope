@@ -2,6 +2,25 @@ import { useRef, useState } from "react";
 import { Plus, Pencil, X, Image as ImageIcon, Camera, FolderOpen, Smartphone, Shield, Cable, Headphones, Wrench } from "lucide-react";
 import { useProducts } from "../../context/ProductContext";
 
+// --- Cloudinary config ---
+const CLOUDINARY_CLOUD_NAME = "vk1hgcmc";
+const CLOUDINARY_UPLOAD_PRESET = "balbali_products";
+
+async function uploadToCloudinary(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: "POST", body: formData }
+  );
+
+  if (!res.ok) throw new Error("Cloudinary upload failed");
+  const data = await res.json();
+  return data.secure_url;
+}
+
 const CATEGORIES = [
   { id: "phones", name: "Téléphones", icon: Smartphone },
   { id: "cases", name: "Coques", icon: Shield },
@@ -19,7 +38,7 @@ const EMPTY_FORM = {
   sku: "",
   category: "",
   colors: [],
-  images: [], // up to MAX_IMAGES data URLs
+  images: [], // up to MAX_IMAGES Cloudinary URLs
   description: "",
   inStock: true,
   newArrival: false,
@@ -31,21 +50,13 @@ const EMPTY_FORM = {
 
 const EMPTY_COLOR_DRAFT = { name: "", hex: "#000000" };
 
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function AdminProducts() {
   const { products, addProduct, deleteProduct, updateProduct } = useProducts();
   const [form, setForm] = useState(EMPTY_FORM);
   const [colorDraft, setColorDraft] = useState(EMPTY_COLOR_DRAFT);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -64,9 +75,9 @@ export default function AdminProducts() {
     setForm((f) => ({ ...f, colors: f.colors.filter((_, i) => i !== index) }));
   };
 
-  // Appends the newly picked photo to the images array (instead of
-  // overwriting), capped at MAX_IMAGES. Extra files beyond the remaining
-  // slots are silently ignored rather than erroring out.
+  // Uploads newly picked photos to Cloudinary and appends the returned
+  // URLs to the images array (instead of overwriting), capped at
+  // MAX_IMAGES. Extra files beyond the remaining slots are ignored.
   const handleImageFile = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -74,9 +85,17 @@ export default function AdminProducts() {
     const remainingSlots = MAX_IMAGES - form.images.length;
     const filesToAdd = files.slice(0, remainingSlots);
 
-    const dataUrls = await Promise.all(filesToAdd.map(fileToDataUrl));
-    setForm((f) => ({ ...f, images: [...f.images, ...dataUrls] }));
-    e.target.value = "";
+    setUploading(true);
+    try {
+      const urls = await Promise.all(filesToAdd.map(uploadToCloudinary));
+      setForm((f) => ({ ...f, images: [...f.images, ...urls] }));
+    } catch (err) {
+      console.error("Error uploading image:", err);
+      alert("Échec de l'envoi de l'image. Vérifiez votre connexion et réessayez.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const removeImage = (index) => {
@@ -201,8 +220,6 @@ export default function AdminProducts() {
             </thead>
             <tbody>
               {products.map((p) => {
-                // Backward-compatible: older products may still have a
-                // numeric "stock" field instead of the boolean "inStock".
                 const isInStock =
                   typeof p.inStock === "boolean" ? p.inStock : (p.stock ?? 0) > 0;
                 return (
@@ -331,13 +348,17 @@ export default function AdminProducts() {
                     </div>
                   )}
 
-                  {form.images.length === 0 && (
+                  {form.images.length === 0 && !uploading && (
                     <div className="admin-image-picker__preview">
                       <ImageIcon size={22} />
                     </div>
                   )}
 
-                  {remainingSlots > 0 ? (
+                  {uploading && (
+                    <p style={{ fontSize: "13px", color: "#666" }}>Envoi de la photo en cours...</p>
+                  )}
+
+                  {remainingSlots > 0 && !uploading ? (
                     <div className="admin-image-picker__buttons">
                       <button
                         type="button"
@@ -354,11 +375,11 @@ export default function AdminProducts() {
                         <Camera size={16} /> Prendre une photo
                       </button>
                     </div>
-                  ) : (
+                  ) : remainingSlots === 0 ? (
                     <p style={{ fontSize: "12px", color: "#888" }}>
                       Maximum de {MAX_IMAGES} photos atteint. Retirez-en une pour en ajouter une autre.
                     </p>
-                  )}
+                  ) : null}
 
                   <input
                     ref={galleryInputRef}
@@ -523,13 +544,11 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-         
-
               <div className="admin-modal-form__actions">
                 <button type="button" className="admin-link admin-logout-btn" onClick={closeForm}>
                   Annuler
                 </button>
-                <button className="admin-btn" type="submit">
+                <button className="admin-btn" type="submit" disabled={uploading}>
                   {editingProduct ? "Enregistrer les modifications" : "Enregistrer le produit"}
                 </button>
               </div>
