@@ -87,7 +87,7 @@ export default function AdminClients() {
                     <td>{contact?.phone || "—"}</td>
                     <td>{contact?.gouvernerat || "—"}</td>
                     <td>{count}</td>
-                    <td>${total.toFixed(2)}</td>
+                    <td>{total.toFixed(2)} TND</td>
                     <td>
                       <button className="admin-btn" onClick={() => setSelected(c)}>
                         View
@@ -138,7 +138,7 @@ export default function AdminClients() {
               const { count, total } = statsFor(selected.email);
               return (
                 <p>
-                  <strong>{count}</strong> commande{count !== 1 ? "s" : ""} — <strong>${total.toFixed(2)}</strong> dépensé
+                  <strong>{count}</strong> commande{count !== 1 ? "s" : ""} — <strong>{total.toFixed(2)} TND</strong> dépensé
                   {count !== 1 ? "s" : ""} au total
                 </p>
               );
@@ -166,7 +166,7 @@ export default function AdminClients() {
                         #{o.id} — {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "—"}
                       </span>
                       <span>
-                        ${Number(o.total || 0).toFixed(2)} · {o.status}
+                        {Number(o.total || 0).toFixed(2)} TND · {o.status}
                       </span>
                     </li>
                   ))}

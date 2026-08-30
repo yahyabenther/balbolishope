@@ -12,6 +12,11 @@ function toDateInputValue(d) {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+// Formats a date as day/month/year (e.g. 28/08/2026) for display in the
+// orders table, instead of the browser's default locale format.
+function formatDisplayDate(d) {
+  return new Date(d).toLocaleDateString("fr-FR");
+}
 
 const STATUS_COLORS = {
   pending: "#B8860B", // amber/gold
@@ -83,23 +88,18 @@ export default function AdminOrders() {
     });
 
     sheet.columns = [
-      { header: "nom", key: "nom", width: 20 },
-      { header: "locality_id", key: "locality_id", width: 12 },
-      { header: "gouvernerat", key: "gouvernerat", width: 14 },
-      { header: "ville", key: "ville", width: 14 },
-      { header: "adresse", key: "adresse", width: 30 },
-      { header: "telephone", key: "telephone", width: 14 },
-      { header: "telephone2", key: "telephone2", width: 14 },
-      { header: "prix", key: "prix", width: 12 },
-      { header: "designation", key: "designation", width: 30 },
-      { header: "nombreArticle", key: "nombreArticle", width: 13 },
-      { header: "commentaire", key: "commentaire", width: 22 },
-      { header: "article", key: "article", width: 30 },
-      { header: "nombreEchange", key: "nombreEchange", width: 13 },
-      { header: "estFragile", key: "estFragile", width: 12 },
-      { header: "ouvrirColis", key: "ouvrirColis", width: 12 },
-      { header: "Order #", key: "orderId", width: 14 },
-      { header: "Status", key: "status", width: 14 },
+      { header: "Nom client", key: "nom", width: 20 },
+      { header: "Addresse", key: "adresse", width: 30 },
+      { header: "Governerat", key: "gouvernerat", width: 14 },
+      { header: "Ville", key: "ville", width: 14 },
+      { header: "Téléphone", key: "telephone", width: 14 },
+      { header: "Téléphone 2", key: "telephone2", width: 14 },
+      { header: "Nbr article", key: "nombreArticle", width: 13 },
+      { header: "Prix", key: "prix", width: 12 },
+      { header: "Designation", key: "designation", width: 30 },
+      { header: "Commentaire", key: "commentaire", width: 22 },
+      { header: "Ouvrir colis", key: "ouvrirColis", width: 12 },
+      { header: "Colis Fragile", key: "estFragile", width: 12 },
     ];
 
     undeliveredOrders.forEach((o) => {
@@ -107,22 +107,17 @@ export default function AdminOrders() {
       const produit = o.Produit || {};
       sheet.addRow({
         nom: client.nom || "",
-        locality_id: "",
+        adresse: client.adresse || "",
         gouvernerat: client.gouvernerat || "",
         ville: client.ville || "",
-        adresse: client.adresse || "",
         telephone: client.telephone || "",
         telephone2: client.telephone2 || "",
+        nombreArticle: produit.nombreArticle ?? (o.items || []).reduce((n, it) => n + (it.qty || 0), 0),
         prix: Number(produit.prix ?? o.total ?? 0),
         designation: produit.designation || (o.items || []).map((it) => it.color ? `${it.name} (${it.color})` : it.name).join(", "),
-        nombreArticle: produit.nombreArticle ?? (o.items || []).reduce((n, it) => n + (it.qty || 0), 0),
         commentaire: produit.commentaire || "",
-        article: produit.article || (o.items || []).map((it) => it.color ? `${it.name} (${it.color})` : it.name).join(", "),
-        nombreEchange: produit.nombreEchange ?? 0,
-        estFragile: produit.estFragile || "non",
-        ouvrirColis: produit.ouvrirColis || "non",
-        orderId: o.id,
-        status: o.status,
+        ouvrirColis: produit.ouvrirColis || "OUI",
+        estFragile: produit.estFragile || "OUI",
       });
     });
 
@@ -141,18 +136,12 @@ export default function AdminOrders() {
       };
     });
 
-    // --- Body styling: currency format, borders, zebra striping, status colors ---
-    const STATUS_FILL = {
-      pending: "FFFFF3CD", // soft yellow
-      shipped: "FFD6EAF8", // soft blue
-      cancelled: "FFF8D7DA", // soft red
-    };
-
+    // --- Body styling: currency format, borders, zebra striping ---
     sheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return; // header already styled
 
       const isEven = rowNumber % 2 === 0;
-      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      row.eachCell({ includeEmpty: true }, (cell) => {
         cell.border = {
           top: { style: "hair", color: { argb: "FFE0E0E0" } },
           bottom: { style: "hair", color: { argb: "FFE0E0E0" } },
@@ -168,18 +157,9 @@ export default function AdminOrders() {
       // "prix" is column 8 — format as currency
       row.getCell(8).numFmt = '#,##0.00 "TND"';
       row.getCell(8).alignment = { vertical: "middle", horizontal: "right" };
-
-      // Color the Status cell (column 17) by status
-      const statusCell = row.getCell(17);
-      const fill = STATUS_FILL[statusCell.value];
-      if (fill) {
-        statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
-      }
-      statusCell.alignment = { vertical: "middle", horizontal: "center" };
-      statusCell.font = { bold: true };
     });
 
-    sheet.autoFilter = { from: "A1", to: "Q1" };
+    sheet.autoFilter = { from: "A1", to: "L1" };
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
@@ -283,10 +263,10 @@ export default function AdminOrders() {
               {filteredOrders.map((o) => (
                 <tr key={o.id}>
                   <td>{o.id}</td>
-                  <td>{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "—"}</td>
+                  <td>{o.createdAt ? formatDisplayDate(o.createdAt) : "—"}</td>
                   <td>{o.Client?.nom || "Invité"}</td>
                   <td>{o.Client?.telephone || "—"}</td>
-                  <td>${Number(o.total || 0).toFixed(2)}</td>
+                  <td>{Number(o.total || 0).toFixed(2)} TND</td>
                   <td>
                     <select
                       value={o.status}
@@ -405,14 +385,14 @@ export default function AdminOrders() {
                         {item.color}
                       </span>
                     )}
-                    {" "}× {item.qty} — ${Number((item.price || 0) * (item.qty || 0)).toFixed(2)}
+                    {" "}× {item.qty} — {Number((item.price || 0) * (item.qty || 0)).toFixed(2)} TND
                   </span>
                 </li>
               ))}
             </ul>
 
             <p>
-              <strong>Total :</strong> ${Number(selected.total || 0).toFixed(2)}
+              <strong>Total :</strong> {Number(selected.total || 0).toFixed(2)} TND
             </p>
             <button className="admin-btn" onClick={() => setSelected(null)}>
               Fermer

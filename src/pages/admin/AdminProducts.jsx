@@ -16,14 +16,15 @@ const EMPTY_FORM = {
   oldPrice: "",
   sku: "",
   category: "",
-  colors: [], // [{ name, hex }, ...] — customers pick one of these on the product page
+  colors: [],
   image: "",
   description: "",
-  inStock: true, // simple availability toggle instead of a stock count
+  inStock: true,
   newArrival: false,
   promotion: false,
   bestSeller: false,
   featured: false,
+  showInSlider: false,
 };
 
 const EMPTY_COLOR_DRAFT = { name: "", hex: "#000000" };
@@ -102,6 +103,7 @@ export default function AdminProducts() {
       promotion: !!product.tags?.promotion,
       bestSeller: !!product.tags?.bestSeller,
       featured: !!product.tags?.featured,
+      showInSlider: !!product.showInSlider,
     });
     setColorDraft(EMPTY_COLOR_DRAFT);
     setShowForm(true);
@@ -223,7 +225,7 @@ export default function AdminProducts() {
                         "—"
                       )}
                     </td>
-                    <td>${Number(p.price).toFixed(2)}</td>
+                    <td>{Number(p.price).toFixed(2)} TND</td>
                     <td>
                       {isInStock ? (
                         <span className="admin-badge admin-badge--delivered">En stock</span>
@@ -451,6 +453,15 @@ export default function AdminProducts() {
                   </label>
                   <label>
                     <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} /> En vedette
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label>Diaporama principal (Slider d'accueil)</label>
+                <div className="admin-modal-form__checkboxes">
+                  <label>
+                    <input type="checkbox" name="showInSlider" checked={form.showInSlider} onChange={handleChange} /> Afficher ce produit dans le diaporama de la page d'accueil
                   </label>
                 </div>
               </div>

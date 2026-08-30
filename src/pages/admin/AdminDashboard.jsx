@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { DollarSign, ShoppingBag, Users, Package, Clock, Truck, CheckCircle, XCircle } from "lucide-react";
+import { ShoppingBag, Users, Package, Clock, Truck, CheckCircle, XCircle } from "lucide-react";
 import { useProducts } from "../../context/ProductContext";
 import { useOrders } from "../../context/OrderContext";
 import { useAuth } from "../../context/AuthContext";
@@ -26,6 +26,40 @@ const STATUS_ICONS = {
   delivered: CheckCircle,
   cancelled: XCircle,
 };
+
+// Custom currency icon (Tunisian Dinar) — lucide-react has no built-in DT
+// icon, so this mimics its stroke-icon conventions (same `size` prop,
+// inherits color via currentColor) to drop in wherever a lucide icon
+// component is expected.
+function DtIcon({ size = 18, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <text
+        x="12"
+        y="12.5"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize="8"
+        fontWeight="700"
+        stroke="none"
+        fill="currentColor"
+      >
+        DT
+      </text>
+    </svg>
+  );
+}
 
 // Builds the last `count` months (oldest → newest) as {key, label} pairs
 // anchored on today, so the chart always shows a rolling window.
@@ -63,7 +97,7 @@ export default function AdminDashboard() {
   }, [orders]);
 
   const stats = [
-    { label: "Revenu total (livrées)", value: `$${totalRevenue.toFixed(2)}`, icon: DollarSign, highlight: true },
+    { label: "Revenu total (livrées)", value: `${totalRevenue.toFixed(2)} DT`, icon: DtIcon, highlight: true },
     { label: STATUS_LABELS.pending, value: statusCounts.pending, icon: Clock },
     { label: STATUS_LABELS.shipped, value: statusCounts.shipped, icon: Truck },
     { label: STATUS_LABELS.delivered, value: statusCounts.delivered, icon: CheckCircle },
