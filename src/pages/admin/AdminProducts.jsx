@@ -10,6 +10,8 @@ const CATEGORIES = [
   { id: "accessories", name: "Accessoires", icon: Wrench },
 ];
 
+const MAX_IMAGES = 5;
+
 const EMPTY_FORM = {
   name: "",
   price: "",
@@ -17,7 +19,7 @@ const EMPTY_FORM = {
   sku: "",
   category: "",
   colors: [],
-  image: "",
+  images: [], // up to MAX_IMAGES data URLs
   description: "",
   inStock: true,
   newArrival: false,
@@ -62,12 +64,23 @@ export default function AdminProducts() {
     setForm((f) => ({ ...f, colors: f.colors.filter((_, i) => i !== index) }));
   };
 
+  // Appends the newly picked photo to the images array (instead of
+  // overwriting), capped at MAX_IMAGES. Extra files beyond the remaining
+  // slots are silently ignored rather than erroring out.
   const handleImageFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const dataUrl = await fileToDataUrl(file);
-    setForm((f) => ({ ...f, image: dataUrl }));
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const remainingSlots = MAX_IMAGES - form.images.length;
+    const filesToAdd = files.slice(0, remainingSlots);
+
+    const dataUrls = await Promise.all(filesToAdd.map(fileToDataUrl));
+    setForm((f) => ({ ...f, images: [...f.images, ...dataUrls] }));
     e.target.value = "";
+  };
+
+  const removeImage = (index) => {
+    setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== index) }));
   };
 
   const openCreateForm = () => {
@@ -86,6 +99,13 @@ export default function AdminProducts() {
       : product.color
       ? [{ name: product.color, hex: product.colorHex || "#000000" }]
       : [];
+    // Backward-compatible: older products may only have a single "image"
+    // field instead of the "images" array.
+    const images = Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : product.image
+      ? [product.image]
+      : [];
     setForm({
       name: product.name || "",
       price: product.price ?? "",
@@ -93,7 +113,7 @@ export default function AdminProducts() {
       sku: product.sku || "",
       category: product.category || "",
       colors,
-      image: product.images?.[0] || product.image || "",
+      images,
       description: product.description || "",
       // Backward-compatible: older products may still have a numeric
       // "stock" field instead of the boolean "inStock" flag.
@@ -120,10 +140,9 @@ export default function AdminProducts() {
     e.preventDefault();
     if (!form.name || !form.price) return;
 
-    const { image, newArrival, promotion, bestSeller, featured, oldPrice, inStock, ...rest } = form;
+    const { newArrival, promotion, bestSeller, featured, oldPrice, inStock, ...rest } = form;
     const payload = {
       ...rest,
-      images: image ? [image] : [],
       price: parseFloat(form.price),
       oldPrice: oldPrice ? parseFloat(oldPrice) : null,
       inStock,
@@ -149,6 +168,8 @@ export default function AdminProducts() {
       deleteProduct(id);
     }
   };
+
+  const remainingSlots = MAX_IMAGES - form.images.length;
 
   return (
     <div>
@@ -261,44 +282,89 @@ export default function AdminProducts() {
 
             <form className="admin-modal-form" onSubmit={handleSubmit}>
               <div>
-                <label>Photo du produit</label>
+                <label>Photos du produit ({form.images.length}/{MAX_IMAGES})</label>
                 <div className="admin-image-picker">
-                  <div className="admin-image-picker__preview">
-                    {form.image ? (
-                      <img src={form.image} alt="Aperçu" />
-                    ) : (
+                  {form.images.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
+                      {form.images.map((img, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            position: "relative",
+                            width: 72,
+                            height: 72,
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            border: "1px solid #ddd",
+                          }}
+                        >
+                          <img
+                            src={img}
+                            alt={`Aperçu ${i + 1}`}
+                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(i)}
+                            aria-label={`Retirer la photo ${i + 1}`}
+                            style={{
+                              position: "absolute",
+                              top: 2,
+                              right: 2,
+                              width: 20,
+                              height: 20,
+                              borderRadius: "50%",
+                              border: "none",
+                              background: "rgba(0,0,0,0.6)",
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              padding: 0,
+                            }}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {form.images.length === 0 && (
+                    <div className="admin-image-picker__preview">
                       <ImageIcon size={22} />
-                    )}
-                  </div>
-                  <div className="admin-image-picker__buttons">
-                    <button
-                      type="button"
-                      className="admin-image-picker__btn"
-                      onClick={() => galleryInputRef.current?.click()}
-                    >
-                      <FolderOpen size={16} /> Choisir depuis la galerie
-                    </button>
-                    <button
-                      type="button"
-                      className="admin-image-picker__btn admin-image-picker__btn--camera"
-                      onClick={() => cameraInputRef.current?.click()}
-                    >
-                      <Camera size={16} /> Prendre une photo
-                    </button>
-                    {form.image && (
+                    </div>
+                  )}
+
+                  {remainingSlots > 0 ? (
+                    <div className="admin-image-picker__buttons">
                       <button
                         type="button"
-                        className="admin-image-picker__remove"
-                        onClick={() => setForm((f) => ({ ...f, image: "" }))}
+                        className="admin-image-picker__btn"
+                        onClick={() => galleryInputRef.current?.click()}
                       >
-                        Retirer la photo
+                        <FolderOpen size={16} /> Choisir depuis la galerie
                       </button>
-                    )}
-                  </div>
+                      <button
+                        type="button"
+                        className="admin-image-picker__btn admin-image-picker__btn--camera"
+                        onClick={() => cameraInputRef.current?.click()}
+                      >
+                        <Camera size={16} /> Prendre une photo
+                      </button>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: "12px", color: "#888" }}>
+                      Maximum de {MAX_IMAGES} photos atteint. Retirez-en une pour en ajouter une autre.
+                    </p>
+                  )}
+
                   <input
                     ref={galleryInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageFile}
                     style={{ display: "none" }}
                   />
@@ -457,14 +523,7 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div>
-                <label>Diaporama principal (Slider d'accueil)</label>
-                <div className="admin-modal-form__checkboxes">
-                  <label>
-                    <input type="checkbox" name="showInSlider" checked={form.showInSlider} onChange={handleChange} /> Afficher ce produit dans le diaporama de la page d'accueil
-                  </label>
-                </div>
-              </div>
+         
 
               <div className="admin-modal-form__actions">
                 <button type="button" className="admin-link admin-logout-btn" onClick={closeForm}>
