@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
 import { useOrders } from "../../context/OrderContext";
+import { useProducts } from "../../context/ProductContext";
 import ExcelJS from "exceljs";
 
 // Local yyyy-mm-dd for a given date, matching what an <input type="date">
@@ -34,6 +35,7 @@ const STATUS_BG = {
 
 export default function AdminOrders() {
   const { orders, updateOrderStatus } = useOrders();
+  const { products } = useProducts();
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState(""); // order #, name, or phone
   const [searchDate, setSearchDate] = useState(""); // yyyy-mm-dd from the date picker
@@ -79,6 +81,13 @@ export default function AdminOrders() {
       return;
     }
 
+    // Map productId -> fragile flag, so we can tell whether any item in
+    // an order came from a product the admin flagged as fragile.
+    const fragileById = {};
+    products.forEach((p) => {
+      fragileById[p.id] = !!p.fragile;
+    });
+
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "Admin Dashboard";
     workbook.created = new Date();
@@ -105,6 +114,11 @@ export default function AdminOrders() {
     undeliveredOrders.forEach((o) => {
       const client = o.Client || {};
       const produit = o.Produit || {};
+
+      // An order is fragile if ANY item in it comes from a product the
+      // admin flagged as fragile.
+      const orderIsFragile = (o.items || []).some((it) => fragileById[it.productId]);
+
       sheet.addRow({
         nom: client.nom || "",
         adresse: client.adresse || "",
@@ -117,7 +131,7 @@ export default function AdminOrders() {
         designation: produit.designation || (o.items || []).map((it) => it.color ? `${it.name} (${it.color})` : it.name).join(", "),
         commentaire: produit.commentaire || "",
         ouvrirColis: produit.ouvrirColis || "OUI",
-        estFragile: produit.estFragile || "OUI",
+        estFragile: orderIsFragile ? "OUI" : "NON",
       });
     });
 

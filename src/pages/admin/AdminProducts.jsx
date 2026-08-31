@@ -45,6 +45,7 @@ const EMPTY_FORM = {
   images: [], // up to MAX_IMAGES Cloudinary URLs
   description: "",
   inStock: true,
+  fragile: false, // NEW — used to auto-mark orders as fragile in the Excel export
   newArrival: false,
   promotion: false,
   bestSeller: false,
@@ -142,6 +143,7 @@ export default function AdminProducts() {
       // "stock" field instead of the boolean "inStock" flag.
       inStock:
         typeof product.inStock === "boolean" ? product.inStock : (product.stock ?? 0) > 0,
+      fragile: !!product.fragile,
       newArrival: !!product.tags?.newArrival,
       promotion: !!product.tags?.promotion,
       bestSeller: !!product.tags?.bestSeller,
@@ -219,6 +221,7 @@ export default function AdminProducts() {
                 <th>Couleur</th>
                 <th>Prix</th>
                 <th>Disponibilité</th>
+                <th>Fragile</th>
                 <th></th>
               </tr>
             </thead>
@@ -273,6 +276,13 @@ export default function AdminProducts() {
                         <span className="admin-badge admin-badge--delivered">En stock</span>
                       ) : (
                         <span className="admin-badge admin-badge--cancelled">Rupture</span>
+                      )}
+                    </td>
+                    <td>
+                      {p.fragile ? (
+                        <span className="admin-badge admin-badge--pending">Fragile</span>
+                      ) : (
+                        "—"
                       )}
                     </td>
                     <td style={{ display: "flex", gap: 8 }}>
@@ -439,14 +449,28 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="pf-category">Catégorie</label>
-                <select id="pf-category" name="category" value={form.category} onChange={handleChange} required>
-                  <option value="">Choisir une catégorie</option>
-                  {CATEGORIES.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+              <div className="admin-modal-form__row">
+                <div>
+                  <label htmlFor="pf-category">Catégorie</label>
+                  <select id="pf-category" name="category" value={form.category} onChange={handleChange} required>
+                    <option value="">Choisir une catégorie</option>
+                    {CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="pf-fragile">Colis Fragile</label>
+                  <select
+                    id="pf-fragile"
+                    name="fragile"
+                    value={form.fragile ? "true" : "false"}
+                    onChange={(e) => setForm((f) => ({ ...f, fragile: e.target.value === "true" }))}
+                  >
+                    <option value="false">Non</option>
+                    <option value="true">Oui</option>
+                  </select>
+                </div>
               </div>
 
               <div>
