@@ -4,7 +4,7 @@ import { CheckCircle2, MessageCircle, ShoppingBag, MapPin, Phone, Package } from
 
 // Admin's WhatsApp number, Tunisia country code included (no + or leading
 // zero — that's the format wa.me expects).
-const ADMIN_WHATSAPP_NUMBER = "21656948481";
+const ADMIN_WHATSAPP_NUMBER = "21650519451";
 
 function buildWhatsAppMessage(state) {
   const lines = [];
