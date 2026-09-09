@@ -125,6 +125,12 @@ export default function Checkout() {
     setSubmitting(true);
     try {
       const orderPayload = {
+        // Firestore security rules require this field to be present on
+        // every order: the logged-in customer's own uid, or explicitly
+        // null for a guest checkout. Never omit this field — a missing
+        // field is treated differently than null by the rules and will
+        // cause the write to be denied.
+        userId: isLoggedIn && user ? user.uid : null,
         Client: {
           nom: form.nom,
           gouvernerat: form.gouvernerat,
