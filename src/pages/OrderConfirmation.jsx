@@ -36,6 +36,71 @@ function buildWhatsAppMessage(state) {
   return lines.join("\n");
 }
 
+// Scoped styles for the animated WhatsApp CTA. Kept local to this file
+// (rather than a global stylesheet) so it doesn't collide with any other
+// ".whatsapp-btn" usage elsewhere in the app.
+const whatsappButtonStyles = `
+  .order-confirmation .whatsapp-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #25D366;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    isolation: isolate;
+    box-shadow: 0 2px 8px rgba(37, 211, 102, 0.35);
+    transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .order-confirmation .whatsapp-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: #25D366;
+    z-index: -1;
+    animation: whatsapp-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes whatsapp-pulse {
+    0% { opacity: 0.55; transform: scale(1); }
+    70% { opacity: 0; transform: scale(1.55); }
+    100% { opacity: 0; transform: scale(1.55); }
+  }
+
+  .order-confirmation .whatsapp-btn:hover {
+    background: #20BD5C;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.45);
+  }
+
+  .order-confirmation .whatsapp-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(37, 211, 102, 0.35);
+  }
+
+  .order-confirmation .whatsapp-btn:focus-visible {
+    outline: 2px solid #128C7E;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .order-confirmation .whatsapp-btn::before {
+      animation: none;
+      display: none;
+    }
+    .order-confirmation .whatsapp-btn {
+      transition: none;
+    }
+  }
+`;
+
 export default function OrderConfirmation() {
   const { state } = useLocation();
 
@@ -47,6 +112,8 @@ export default function OrderConfirmation() {
 
   return (
     <div className="container order-confirmation" style={{ maxWidth: 640, margin: "0 auto", padding: "48px 20px" }}>
+      <style>{whatsappButtonStyles}</style>
+
       {/* Success header */}
       <div style={{ textAlign: "center", marginBottom: 32 }}>
         <div
@@ -197,22 +264,7 @@ export default function OrderConfirmation() {
             <p style={{ margin: "0 0 14px", fontSize: "14px", color: "#444" }}>
               Vous pouvez aussi envoyer les détails de votre commande directement à notre équipe.
             </p>
-            <button
-              onClick={handleSendWhatsApp}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#25D366",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "12px 22px",
-                fontSize: "15px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
+            <button className="whatsapp-btn" onClick={handleSendWhatsApp}>
               <MessageCircle size={18} />
               Envoyer par WhatsApp
             </button>
