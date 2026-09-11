@@ -16,7 +16,10 @@ import {
   setDoc,
   getDoc,
   getDocs,
-  collection
+  collection,
+  query,
+  where,
+  updateDoc,
 } from "firebase/firestore";
 
 const AuthContext = createContext(null);
@@ -174,23 +177,67 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Look up a Firestore user document by email. Used by addSubAdmin to
+  // detect "this email already has an account" BEFORE attempting to
+  // create a new Firebase Auth user, since Auth's email-already-in-use
+  // error gives no way to recover the existing account's uid.
+  async function findUserByEmail(email) {
+    const q = query(collection(db, "users"), where("email", "==", email));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].data();
+  }
+
   // Add Sub-Admin or Moderator account (restricted to existing admins).
+  //
+  // Two cases are handled:
+  //
+  // 1. The email belongs to an EXISTING account (e.g. someone who already
+  //    signed up as a regular customer). In this case we can't create a
+  //    new Firebase Auth user — Auth would reject it with
+  //    "email-already-in-use", and there's no way to recover that
+  //    person's uid from that error alone. Instead, we just promote
+  //    their existing Firestore user doc's role. They keep logging in
+  //    with their original password; only their role/access changes.
+  //
+  // 2. The email is brand new. A fresh Firebase Auth account is created
+  //    for them with the given password, on a short-lived secondary
+  //    Firebase app instance — this avoids kicking the current admin out
+  //    of their own session (see note below).
   //
   // Firebase Auth's client SDK only tracks ONE signed-in user per app
   // instance. Calling createUserWithEmailAndPassword on our normal `auth`
   // instance would create the new account AND immediately sign the
   // browser into it — silently kicking the current admin out of their
-  // own session and into the new moderator's. To avoid that, the new
-  // account is created on a short-lived secondary Firebase app instance
-  // instead, which has its own isolated auth state. Once the account is
-  // created we sign out of (and discard) that secondary instance —
-  // the admin's real session on the primary `auth` instance is never
-  // touched.
+  // own session and into the new moderator's. To avoid that, new
+  // accounts are created on a secondary Firebase app instance instead,
+  // which has its own isolated auth state. Once the account is created
+  // we sign out of (and discard) that secondary instance — the admin's
+  // real session on the primary `auth` instance is never touched.
   async function addSubAdmin(profile) {
     if (!user || !["admin", "super_admin"].includes(user.role)) {
       return { ok: false, error: "Seul un administrateur peut ajouter un compte." };
     }
 
+    const { email, password, name, role } = profile;
+    const resolvedRole = role === "moderator" ? "moderator" : "admin";
+
+    // Case 1: promote an existing account instead of creating a new one.
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+      try {
+        await updateDoc(doc(db, "users", existingUser.uid), {
+          role: resolvedRole,
+          name: name || existingUser.name || "",
+        });
+        await fetchUsers();
+        return { ok: true, promoted: true };
+      } catch (error) {
+        return { ok: false, error: error.message };
+      }
+    }
+
+    // Case 2: brand new email — create a real Auth account for them.
     // Clean up any leftover secondary instance from a previous call that
     // didn't get to finish (e.g. page refresh mid-request).
     const existing = getApps().find((a) => a.name === SECONDARY_APP_NAME);
@@ -202,7 +249,6 @@ export function AuthProvider({ children }) {
     const secondaryAuth = getAuth(secondaryApp);
 
     try {
-      const { email, password, name, role } = profile;
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
       const newAdmin = userCredential.user;
 
@@ -210,7 +256,7 @@ export function AuthProvider({ children }) {
         uid: newAdmin.uid,
         email: email,
         name: name || "",
-        role: role === "moderator" ? "moderator" : "admin",
+        role: resolvedRole,
         createdAt: new Date().toISOString()
       };
 
