@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Private / non-content pages (no SEO value)
+Disallow: /admin
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order-confirmation
+Disallow: /account
+Disallow: /reset-password
+Disallow: /search
+
+Sitemap: https://www.balbalistore.tn/sitemap.xml
